@@ -1,0 +1,47 @@
+.intrinsic
+{
+  font-family: sans-serif;
+}
+
+.intrinsic .name
+{
+  font-size: 16pt;
+  font-weight: bold;
+}
+
+.intrinsic .subsection
+{
+  margin-top: 1em;
+  margin-bottom: 1em;
+  font-size: 12pt;
+  font-weight: bold;
+}
+
+.intrinsic .description
+{
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+
+.intrinsic .synopsis
+{
+  font-family: Monaco;
+  background: #efeff5;
+  margin-left: 1em;
+  margin-right: 1em;
+  padding: 0.5em;
+  border: 0px;
+  border-radius: 6px;
+}
+
+.intrinsic .operation
+{
+  font-family: Monaco;
+  background: #efefef;
+  margin-left: 1em;
+  margin-right: 1em;
+  padding: 0.5em;
+  border: 0px;
+  border-radius: 6px;
+}

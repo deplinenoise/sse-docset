@@ -76,17 +76,72 @@ for my $insn (@{$result->{Children}}) {
   push @{$by_tech->{$tech}}, $insn;
 }
 
+make_path "$outdir/Contents/Resources/Documents" or die "couldn't make dir: $!";
+
 print "Generating HTML\n";
 # Generate HTML
-while (my ($k, $v) = each %$by_tech) {
+open my $index, ">", "$outdir/Contents/Resources/Documents/index.html" or die "$!";
+print $index <<END;
+<html>
+<head><title>Intel Intrinsics</title></head>
+<link rel='stylesheet' type='text/css' href='ssestyle.css'>
+<body>
+<div class='section'>About Intel Intrinsics</div>
+
+<p> This docset was built from data downloaded from the <a
+href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">Intel
+Intrinsics Guide</a>.
+
+<div class='section'>Technology Index</div>
+<ul>
+END
+
+sub get_category {
+  my $insn = shift;
+  if (my $category = get_child $insn, 'category') {
+    return $category->{Text};
+  }
+  return "Other";
+}
+
+for my $k (sort keys %$by_tech) {
+  my $v = $by_tech->{$k};
   my $tech_id = $k;
   $tech_id =~ tr/A-Za-z0-9/_/c;
-  foreach my $insn (@$v) {
+
+  print $index "<li><a href='$tech_id.html'>$k</a></li>\n";
+
+  open my $techf, '>', "$outdir/Contents/Resources/Documents/$tech_id.html" or die "open $!";
+
+  print $techf <<END;
+<html>
+<head><title>Intel Intrinsics: $k</title></head>
+<link rel='stylesheet' type='text/css' href='ssestyle.css'>
+<body>
+<div class='section'>$k Intrinsics</div>
+END
+
+  my $prev_category = '';
+  foreach my $insn (sort { get_category($a) cmp get_category($b) || $a->{Attrs}->{name} cmp $b->{Attrs}->{name}} @$v) {
     my $odir = "$outdir/Contents/Resources/Documents/$tech_id";
     unless (-e $odir) { 
       make_path $odir or die "couldn't make $odir: $!";
     }
     my $fn = "$odir/$insn->{Attrs}->{name}.html";
+
+    # Print technology index entry
+    my $category = get_category $insn;
+    if ($prev_category ne $category) {
+      if ($prev_category ne '') {
+        print $techf "</ul>\n";
+      }
+      print $techf "<div class='subsection'>$category</div>\n";
+      print $techf "<ul>\n";
+      $prev_category = $category;
+    }
+
+    print $techf "<li><a href='$tech_id/$insn->{Attrs}->{name}.html'>$insn->{Attrs}->{name}</a></li>\n";
+
     open my $f, ">", $fn or die "can't open $fn for output";
     print $f "<html>\n";
     print $f "  <head>\n";
@@ -100,11 +155,7 @@ while (my ($k, $v) = each %$by_tech) {
     print $f "<div class='name'>$insn->{Attrs}->{name}</div>\n";
     print $f "<div class='subsection'>CPUID Feature Level</div>\n";
     print $f "<div class='subsection'>Category</div>\n";
-    print $f "<div class='category'>\n$k";
-    if (my $category = get_child $insn, 'category') {
-      print $f ", $category->{Text}\n";
-    }
-    print $f "</div>\n";
+    print $f "<div class='category'>\n$k, $category</div>\n";
     if (my $header = get_child $insn, 'header') {
       print $f "<div class='subsection'>Header File</div>\n";
       print $f "<div class='header'>$header->{Text}</div>\n";
@@ -137,12 +188,20 @@ while (my ($k, $v) = each %$by_tech) {
     print $f "</html>\n";
     close $f;
   }
+
+  print $techf "</ul></body></html>\n";
+  close $techf;
 }
+
+print $index "</ul></body></html>\n";
+close $index;
 
 print "Copy stylesheet\n";
 copy("ssestyle.css", "$outdir/Contents/Resources/Documents/ssestyle.css") or die "copy failed: $!";
 print "Copy Info.plist\n";
 copy("Info.plist", "$outdir/Contents/Info.plist") or die "copy failed: $!";
+print "Copy icon\n";
+copy("icon.png", "$outdir/icon.png") or die "copy failed: $!";
 
 print "Generating SQLite database\n";
 # Generate SQLite data
@@ -163,6 +222,6 @@ do {
     }
   }
   close $fh;
-} if (0);
+} if (1); # toggle here during dev to speed things up..
 
 print "Done";

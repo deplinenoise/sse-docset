@@ -71,8 +71,7 @@ sub get_children {
 my $by_tech = {};
 
 for my $insn (@{$result->{Children}}) {
-  my $cpuid = get_child($insn, "CPUID");
-  my $tech = defined $cpuid ? $cpuid->{Text} : "Other";
+  my $tech = $insn->{Attrs}->{tech} || "Other";
   push @{$by_tech->{$tech}}, $insn;
 }
 
@@ -154,7 +153,13 @@ END
     print $f "<div class='intrinsic'>\n";
     print $f "<div class='name'>$insn->{Attrs}->{name}</div>\n";
     print $f "<div class='subsection'>Classification</div>\n";
-    print $f "<div class='category'>\n<a href='../$tech_id.html'>$k</a>, $category</div>\n";
+    print $f "<div class='category'>\n<a href='../$tech_id.html'>$k</a>, $category, CPUID Test: ";
+    if (my $cpuid = get_child $insn, 'CPUID') {
+      print $f "$cpuid->{Text}";
+    } else {
+      print $f "None";
+    }
+    print $f "</div>\n";
     if (my $header = get_child $insn, 'header') {
       print $f "<div class='subsection'>Header File</div>\n";
       print $f "<div class='header'>$header->{Text}</div>\n";

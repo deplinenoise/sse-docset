@@ -115,7 +115,7 @@ for my $k (sort keys %$by_tech) {
 
   print $techf <<END;
 <html>
-<head><title>Intel Intrinsics: $k</title></head>
+<head><title>$k Intrinsics</title></head>
 <link rel='stylesheet' type='text/css' href='ssestyle.css'>
 <body>
 <div class='section'>$k Intrinsics</div>
@@ -145,7 +145,7 @@ END
     open my $f, ">", $fn or die "can't open $fn for output";
     print $f "<html>\n";
     print $f "  <head>\n";
-    print $f "    <title>$k Intrinsics</title>\n";
+    print $f "    <title>$insn->{Attrs}->{name}</title>\n";
     print $f "    <link rel='stylesheet' type='text/css' href='../ssestyle.css'>\n";
     print $f "  </head>\n";
     print $f "  <body>\n";
@@ -153,9 +153,8 @@ END
     print $f "<a name='$insn->{Attrs}->{name}'></a>\n";
     print $f "<div class='intrinsic'>\n";
     print $f "<div class='name'>$insn->{Attrs}->{name}</div>\n";
-    print $f "<div class='subsection'>CPUID Feature Level</div>\n";
-    print $f "<div class='subsection'>Category</div>\n";
-    print $f "<div class='category'>\n$k, $category</div>\n";
+    print $f "<div class='subsection'>Classification</div>\n";
+    print $f "<div class='category'>\n<a href='../$tech_id.html'>$k</a>, $category</div>\n";
     if (my $header = get_child $insn, 'header') {
       print $f "<div class='subsection'>Header File</div>\n";
       print $f "<div class='header'>$header->{Text}</div>\n";

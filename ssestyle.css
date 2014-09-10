@@ -19,17 +19,26 @@
 
 .intrinsic .description
 {
-  margin-left: 1em;
-  margin-right: 1em;
 }
 
+.intrinsic .category
+{
+}
+
+.intrinsic .instruction
+{
+  font-family: Monaco;
+}
+
+.intrinsic .header
+{
+  font-family: Monaco;
+}
 
 .intrinsic .synopsis
 {
   font-family: Monaco;
   background: #efeff5;
-  margin-left: 1em;
-  margin-right: 1em;
   padding: 0.5em;
   border: 0px;
   border-radius: 6px;
@@ -39,8 +48,6 @@
 {
   font-family: Monaco;
   background: #efefef;
-  margin-left: 1em;
-  margin-right: 1em;
   padding: 0.5em;
   border: 0px;
   border-radius: 6px;

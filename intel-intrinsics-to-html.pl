@@ -99,11 +99,12 @@ while (my ($k, $v) = each %$by_tech) {
     print $f "<div class='intrinsic'>\n";
     print $f "<div class='name'>$insn->{Attrs}->{name}</div>\n";
     print $f "<div class='subsection'>CPUID Feature Level</div>\n";
-    print $f "<div class='cpuid'>$k</div>\n";
+    print $f "<div class='subsection'>Category</div>\n";
+    print $f "<div class='category'>\n$k";
     if (my $category = get_child $insn, 'category') {
-      print $f "<div class='subsection'>Category</div>\n";
-      print $f "<div class='category'>$category->{Text}</div>\n";
+      print $f ", $category->{Text}\n";
     }
+    print $f "</div>\n";
     if (my $header = get_child $insn, 'header') {
       print $f "<div class='subsection'>Header File</div>\n";
       print $f "<div class='header'>$header->{Text}</div>\n";
@@ -116,7 +117,7 @@ while (my ($k, $v) = each %$by_tech) {
     print $f "<div class='subsection'>Synopsis</div>\n";
     print $f "<pre class='synopsis'>\n";
     my $rettype = $insn->{Attrs}->{rettype};
-    print $f "$rettype" if defined $rettype;
+    print $f "$rettype " if defined $rettype;
     print $f "$insn->{Attrs}->{name}(";
     my @args = map { my $q = "$_->{Attrs}->{type} $_->{Attrs}->{varname}"; $q =~ s/\s+$//; $q } get_children($insn, "parameter");
     print $f join(', ',  @args);
@@ -155,13 +156,13 @@ do {
     foreach my $insn (@$v) {
       my $fn = "$tech_id/$insn->{Attrs}->{name}.html";
       my $name = $insn->{Attrs}->{name};
-      print $fh "INSERT OR IGNORE INTO searchIndex(name, type, path) VALUES ('$name', 'Function', '$fn#$name');\n";
+      print $fh "INSERT OR IGNORE INTO searchIndex(name, type, path) VALUES ('$name', 'Function', '$fn');\n";
       if (my $i = get_child $insn, 'instruction') {
-        print $fh "INSERT OR IGNORE INTO searchIndex(name, type, path) VALUES ('$i->{Attrs}->{name}', 'Instruction', '$fn#$name');\n";
+        print $fh "INSERT OR IGNORE INTO searchIndex(name, type, path) VALUES ('$i->{Attrs}->{name}', 'Instruction', '$fn');\n";
       }
     }
   }
   close $fh;
-};
+} if (0);
 
 print "Done";

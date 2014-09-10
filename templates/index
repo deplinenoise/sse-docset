@@ -1,0 +1,18 @@
+<html>
+<head><title>Intel Intrinsics</title></head>
+<link rel='stylesheet' type='text/css' href='ssestyle.css'>
+<body>
+<div class='section'>About Intel Intrinsics</div>
+
+<p> This docset was built from data downloaded from the <a
+href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">Intel
+Intrinsics Guide</a>.
+
+<div class='section'>Technology Index</div>
+<ul>
+  [% FOREACH tech = technologies %]
+  <li><a href='[% tech.href %]'>[% tech.name %]</li>
+  [% END %]
+</ul>
+</body>
+</html>

@@ -5,12 +5,16 @@ use warnings;
 use XML::Parser;
 use File::Copy;
 use File::Path qw(make_path remove_tree);
+use Template;
 use utf8;
+
+my $tt = Template->new();
 
 my @stack;
 my $result;
 
 our $outdir = 'IntelIntrinsics.docset';
+our $html_base = "$outdir/Contents/Resources/Documents";
 
 remove_tree $outdir if -e $outdir;
 
@@ -75,25 +79,9 @@ for my $insn (@{$result->{Children}}) {
   push @{$by_tech->{$tech}}, $insn;
 }
 
-make_path "$outdir/Contents/Resources/Documents" or die "couldn't make dir: $!";
-
 print "Generating HTML\n";
+
 # Generate HTML
-open my $index, ">", "$outdir/Contents/Resources/Documents/index.html" or die "$!";
-print $index <<END;
-<html>
-<head><title>Intel Intrinsics</title></head>
-<link rel='stylesheet' type='text/css' href='ssestyle.css'>
-<body>
-<div class='section'>About Intel Intrinsics</div>
-
-<p> This docset was built from data downloaded from the <a
-href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">Intel
-Intrinsics Guide</a>.
-
-<div class='section'>Technology Index</div>
-<ul>
-END
 
 sub get_category {
   my $insn = shift;
@@ -103,102 +91,122 @@ sub get_category {
   return "Other";
 }
 
-for my $k (sort keys %$by_tech) {
-  my $v = $by_tech->{$k};
-  my $tech_id = $k;
-  $tech_id =~ tr/A-Za-z0-9/_/c;
-
-  print $index "<li><a href='$tech_id.html'>$k</a></li>\n";
-
-  open my $techf, '>', "$outdir/Contents/Resources/Documents/$tech_id.html" or die "open $!";
-
-  print $techf <<END;
-<html>
-<head><title>$k Intrinsics</title></head>
-<link rel='stylesheet' type='text/css' href='ssestyle.css'>
-<body>
-<div class='section'>$k Intrinsics</div>
-END
-
-  my $prev_category = '';
-  foreach my $insn (sort { get_category($a) cmp get_category($b) || $a->{Attrs}->{name} cmp $b->{Attrs}->{name}} @$v) {
-    my $odir = "$outdir/Contents/Resources/Documents/$tech_id";
-    unless (-e $odir) { 
-      make_path $odir or die "couldn't make $odir: $!";
-    }
-    my $fn = "$odir/$insn->{Attrs}->{name}.html";
-
-    # Print technology index entry
-    my $category = get_category $insn;
-    if ($prev_category ne $category) {
-      if ($prev_category ne '') {
-        print $techf "</ul>\n";
-      }
-      print $techf "<div class='subsection'>$category</div>\n";
-      print $techf "<ul>\n";
-      $prev_category = $category;
-    }
-
-    print $techf "<li><a href='$tech_id/$insn->{Attrs}->{name}.html'>$insn->{Attrs}->{name}</a></li>\n";
-
-    open my $f, ">", $fn or die "can't open $fn for output";
-    print $f "<html>\n";
-    print $f "  <head>\n";
-    print $f "    <title>$insn->{Attrs}->{name}</title>\n";
-    print $f "    <link rel='stylesheet' type='text/css' href='../ssestyle.css'>\n";
-    print $f "  </head>\n";
-    print $f "  <body>\n";
-
-    print $f "<a name='$insn->{Attrs}->{name}'></a>\n";
-    print $f "<div class='intrinsic'>\n";
-    print $f "<div class='name'>$insn->{Attrs}->{name}</div>\n";
-    print $f "<div class='subsection'>Classification</div>\n";
-    print $f "<div class='category'>\n<a href='../$tech_id.html'>$k</a>, $category, CPUID Test: ";
-    if (my $cpuid = get_child $insn, 'CPUID') {
-      print $f "$cpuid->{Text}";
-    } else {
-      print $f "None";
-    }
-    print $f "</div>\n";
-    if (my $header = get_child $insn, 'header') {
-      print $f "<div class='subsection'>Header File</div>\n";
-      print $f "<div class='header'>$header->{Text}</div>\n";
-    }
-    if (my $i = get_child $insn, 'instruction') {
-      print $f "<div class='subsection'>Instruction</div>\n";
-      my $form = $i->{Attrs}->{form} || "";
-      print $f "<div class='instruction'>$i->{Attrs}->{name} $form</div>\n";
-    }
-    print $f "<div class='subsection'>Synopsis</div>\n";
-    print $f "<pre class='synopsis'>\n";
-    my $rettype = $insn->{Attrs}->{rettype};
-    print $f "$rettype " if defined $rettype;
-    print $f "$insn->{Attrs}->{name}(";
-    my @args = map { my $q = "$_->{Attrs}->{type} $_->{Attrs}->{varname}"; $q =~ s/\s+$//; $q } get_children($insn, "parameter");
-    print $f join(', ',  @args);
-    print $f ");</pre>\n";
-    if (my $descr = get_child($insn, "description")) {
-      print $f "<div class='subsection'>Description</div>\n";
-      print $f "<div class='description'>$descr->{Text}</div>\n";
-    }
-    if (my $op = get_child($insn, "operation")) {
-      my $text = utf8::encode($op->{Text});
-      print $f "<div class='subsection'>Operation</div>\n";
-      print $f "<pre class='operation'>\n$op->{Text}\n</pre>\n";
-    }
-    print $f "</div>\n";
-
-    print $f "  </body>\n";
-    print $f "</html>\n";
-    close $f;
-  }
-
-  print $techf "</ul></body></html>\n";
-  close $techf;
+sub tech_id {
+  my $k = shift;
+  $k =~ tr/A-Za-z0-9/_/c;
+  return $k;
 }
 
-print $index "</ul></body></html>\n";
-close $index;
+# Generate index.html
+do {
+  my $index_data = {};
+
+  for my $k (sort keys %$by_tech) {
+    my $tech_id = tech_id $k;
+    make_path "$html_base/$tech_id" unless -d "$html_base/$tech_id";
+    push @{$index_data->{technologies}}, { href => "$tech_id.html", name => $k };
+  }
+
+  $tt->process('templates/index', $index_data, "$html_base/index.html");
+};
+
+# Generate technology pages
+for my $tech (sort keys %$by_tech) {
+  my $tech_id = tech_id $tech;
+  my $cath;
+  foreach my $insn (@{$by_tech->{$tech}}) {
+    my $cat = get_category $insn;
+    push @{$cath->{$cat}}, $insn->{Attrs}->{name};
+  }
+
+  my $cats = [];
+  foreach my $cat (sort keys %$cath) {
+    push @$cats, {
+      name => $cat,
+      insns => $cath->{$cat}
+    };
+  }
+
+  my $tech_data = {
+    name => $tech,
+    categories => $cats,
+  };
+  
+  $tt->process('templates/tech', $tech_data, "$html_base/$tech_id.html");
+}
+
+# Generate instruction pages.
+
+sub get_cpuid {
+  my $insn = shift;
+  if (my $cpuid = get_child $insn, 'CPUID') {
+    return $cpuid->{Text};
+  }
+  return "None";
+}
+
+sub get_header {
+  my $insn = shift;
+  if (my $h = get_child $insn, 'header') {
+    return $h->{Text};
+  }
+  return "";
+}
+
+sub get_instruction {
+  my $insn = shift;
+  if (my $i = get_child $insn, 'instruction') {
+    my $form = $i->{Attrs}->{form} || "";
+    return "$i->{Attrs}->{name} $form";
+  }
+  return "";
+}
+
+sub get_synopsis {
+  my $insn = shift;
+  my $rettype = $insn->{Attrs}->{rettype} || "";
+  my $result = "$rettype $insn->{Attrs}->{name}(";
+  my @args = map { my $q = "$_->{Attrs}->{type} $_->{Attrs}->{varname}"; $q =~ s/\s+$//; $q } get_children($insn, "parameter");
+  $result .= join(', ',  @args);
+  $result .= ");";
+  return $result;
+}
+
+sub get_description {
+  my $insn = shift;
+  if (my $descr = get_child($insn, "description")) {
+    return $descr->{Text};
+  }
+  return "";
+}
+
+sub get_operation {
+  my $insn = shift;
+  if (my $op = get_child($insn, "operation")) {
+    my $text = $op->{Text};
+    utf8::encode $text;
+    return $text;
+  }
+  return "";
+}
+
+for my $insn (@{$result->{Children}}) {
+
+  my $data = {
+    name        => $insn->{Attrs}->{name},
+    tech_name   => $insn->{Attrs}->{tech},
+    tech_id     => tech_id($insn->{Attrs}->{tech}),
+    category    => get_category($insn),
+    cpuid       => get_cpuid($insn),
+    header      => get_header($insn),
+    instruction => get_instruction($insn),
+    synopsis    => get_synopsis($insn),
+    description => get_description($insn),
+    operation   => get_operation($insn),
+  };
+
+  $tt->process('templates/insn', $data, "$html_base/$data->{tech_id}/$data->{name}.html") || die;
+}
 
 print "Copy stylesheet\n";
 copy("ssestyle.css", "$outdir/Contents/Resources/Documents/ssestyle.css") or die "copy failed: $!";

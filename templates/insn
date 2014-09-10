@@ -1,0 +1,35 @@
+<html>
+  <head>
+    <title>[% name %]</title>
+    <link rel='stylesheet' type='text/css' href='../ssestyle.css'>
+  </head>
+  <body>
+    <div class='intrinsic'>
+      <div class='name'>[% name %]</div>
+      <div class='subsection'>Classification</div>
+      <div class='category'>
+        <a href='../[% tech_id %].html'>[% tech_name %]</a>, [% category %], CPUID Test: [% cpuid %]
+      </div>
+      [% IF header %]
+      <div class='subsection'>Header File</div>
+      <div class='header'>[% header %]</div>
+      [% END %]
+      [% IF instruction %]
+      <div class='subsection'>Instruction</div>
+      <div class='instruction'>[% instruction %]</div>
+      [% END %]
+      <div class='subsection'>Synopsis</div>
+      <pre class='synopsis'>[% synopsis %]</pre>
+
+      [% IF description %]
+      <div class='subsection'>Description</div>
+      <div class='description'>[% description %]</div>
+      [% END %]
+
+      [% IF operation %]
+      <div class='subsection'>Operation</div>
+      <pre class='operation'>[% operation %]</pre>
+      [% END %]
+    </div>
+  </body>
+</html>

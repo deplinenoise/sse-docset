@@ -7,7 +7,7 @@
   <div class='subsection'>[% category.name %]</div>
   <ul>
   [% FOREACH insn = category.insns %]
-    <li><a href='[% name %]/[% insn %].html'>[% insn %]</a></li>
+    <li><a href='[% tech_id %]/[% insn %].html'>[% insn %]</a></li>
   [% END %]
   </ul>
 [% END %]

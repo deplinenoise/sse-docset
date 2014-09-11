@@ -128,7 +128,8 @@ for my $tech (sort keys %$by_tech) {
   }
 
   my $tech_data = {
-    name => $tech,
+    name       => $tech,
+    tech_id    => $tech_id,
     categories => $cats,
   };
   
